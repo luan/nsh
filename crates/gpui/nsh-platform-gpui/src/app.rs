@@ -581,6 +581,12 @@ impl AppView {
         if k.key != "tab" || m.control || m.alt || m.platform || self.tabbed.take() {
             return;
         }
+        // A native component already routed this key through GPUI's focus order.
+        // Only redirect entry from outside; redirecting every native Tab traps
+        // the keyboard on the first component and prevents leaving the surface.
+        if event.context_stack.iter().any(|context| context.contains("NshNativeComponent")) {
+            return;
+        }
         // The host's Tab lands on the view, or (by GPUI's tab order, which
         // does not follow the surface's tree) on one of its components.
         let on_view =
