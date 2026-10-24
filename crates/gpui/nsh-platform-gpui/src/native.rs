@@ -600,6 +600,8 @@ pub(crate) struct Geometry {
     pub(crate) document: Bounds<Pixels>,
     /// Its visible part (empty when clipped away, or when the box is).
     pub(crate) visible: Bounds<Pixels>,
+    // Native GPUI children may paint focus rings outside their own layout box.
+    pub(crate) clip: Bounds<Pixels>,
 }
 
 impl Geometry {
@@ -623,7 +625,8 @@ fn geometry(surface: &Surface, view: &NshView) -> Option<Geometry> {
     };
     let document = to_window(view, w, h)?;
     let (sw, sh) = surface.size();
-    let mut visible = document.intersect(&crate::render::bounds(ox, oy, sw, sh));
+    let mut clip = crate::render::bounds(ox, oy, sw, sh);
+    let mut visible = document.intersect(&clip);
     let mut node = Some(view.clone());
     while let Some(v) = node {
         let (shows, clips, size) = {
@@ -637,15 +640,17 @@ fn geometry(surface: &Surface, view: &NshView) -> Option<Geometry> {
         if !shows {
             return None;
         }
-        if clips
-            && v != *view
-            && let Some(r) = to_window(&v, size.0, size.1)
-        {
+        if clips && let Some(r) = to_window(&v, size.0, size.1) {
+            clip = clip.intersect(&r);
             visible = visible.intersect(&r);
         }
         node = v.parent_view();
     }
-    Some(Geometry { document, visible })
+    Some(Geometry {
+        document,
+        visible,
+        clip,
+    })
 }
 
 /// True when `b` has no area.
@@ -760,7 +765,7 @@ impl ComponentItem {
         self.put(component);
         let size = geometry.document.size;
         let mask = ContentMask {
-            bounds: geometry.visible,
+            bounds: geometry.clip,
         };
         let (focus, element) = window.with_content_mask(Some(mask), |window| {
             // Under the component's own hitboxes: nsh's input (and the
