@@ -766,7 +766,9 @@ impl ComponentItem {
             // Under the component's own hitboxes: nsh's input (and the
             // embedding app's, under the surface) stays away from its box.
             if geometry.shows() {
-                window.insert_hitbox(geometry.visible, HitboxBehavior::BlockMouse);
+                // Native widgets consume their own clicks; unhandled wheel input
+                // still belongs to the containing NSH scroll view.
+                window.insert_hitbox(geometry.visible, HitboxBehavior::BlockMouseExceptScroll);
             }
             // Given exactly the container's size.
             let mut root = gpui::div()
