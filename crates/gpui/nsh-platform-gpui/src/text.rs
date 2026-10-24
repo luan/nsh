@@ -470,8 +470,9 @@ impl GpuiTextEngine {
                                 .map(|n| SharedString::from(n.clone()))
                         }
                     })
-                    // Not installed: lines take the UI font.
-                    .unwrap_or_else(|| fonts.ui.clone())
+                    // The host text system may resolve virtual font families that
+                    // are absent from the platform's installed-family enumeration.
+                    .unwrap_or_else(|| SharedString::from(name.to_string()))
             }
             None => fonts.ui.clone(),
         };
