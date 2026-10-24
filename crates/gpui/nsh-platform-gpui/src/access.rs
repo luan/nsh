@@ -957,6 +957,9 @@ pub(crate) fn synthetic(surface: &Surface, builder: &mut A11ySubtreeBuilder) {
         (s.built.take(), s.proxied.take(), s.announcement.clone())
     });
     let Some(mut built) = built else { return };
+    // Native components prepaint real GPUI children after the focus proxy.
+    // Keep them when replacing the surface's synthetic portion of the tree.
+    let native_children = builder.parent_node().children().to_vec();
     // The proxy is the one node pushed under the surface's so far.
     let proxy = proxied.and_then(|(view, actions)| {
         let id = builder.parent_node().children().first().copied()?;
@@ -987,10 +990,12 @@ pub(crate) fn synthetic(surface: &Surface, builder: &mut A11ySubtreeBuilder) {
         listeners.push((e.id, e.view, e.actions));
         builder.push_child(e.id, e.node);
     }
+    let proxy_id = proxy.as_ref().map(|(id, ..)| *id);
     if let Some((id, view, actions)) = proxy {
         listeners.push((id, view, actions));
     }
     let mut top = built.top;
+    top.extend(native_children.into_iter().filter(|id| Some(*id) != proxy_id));
     if let Some((sequence, text)) = announcement {
         let id = announcement_id(key, sequence);
         let mut node = Node::new(Role::Label);
