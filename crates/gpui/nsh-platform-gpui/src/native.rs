@@ -48,7 +48,7 @@ use std::{
 };
 
 use gpui::{
-    AnyElement, App, AvailableSpace, Bounds, ContentMask, FocusHandle, HitboxBehavior, IntoElement, InteractiveElement,
+    AnyElement, App, AvailableSpace, Bounds, ContentMask, FocusHandle, HitboxBehavior, IntoElement,
     ParentElement, Pixels, Styled, Window, px,
 };
 use nsh_core::{
@@ -770,7 +770,6 @@ impl ComponentItem {
             }
             // Given exactly the container's size.
             let mut root = gpui::div()
-                .key_context("NshNativeComponent")
                 .w(size.width)
                 .h(size.height)
                 .child(element?)

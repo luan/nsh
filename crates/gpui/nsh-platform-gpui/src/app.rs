@@ -581,12 +581,6 @@ impl AppView {
         if k.key != "tab" || m.control || m.alt || m.platform || self.tabbed.take() {
             return;
         }
-        // A native component already routed this key through GPUI's focus order.
-        // Only redirect entry from outside; redirecting every native Tab traps
-        // the keyboard on the first component and prevents leaving the surface.
-        if event.context_stack.iter().any(|context| context.contains("NshNativeComponent")) {
-            return;
-        }
         // The host's Tab lands on the view, or (by GPUI's tab order, which
         // does not follow the surface's tree) on one of its components.
         let on_view =
@@ -600,6 +594,13 @@ impl AppView {
     }
 
     fn tab(&self, shift: bool, window: &mut Window, cx: &mut Context<Self>) {
+        // Embedded GPUI widgets already participate in the window's tab order.
+        // Restarting at the surface's own handle would trap focus on its first widget.
+        if crate::native::focused(&self.surface, window) {
+            self.tabbed.set(true);
+            if shift { window.focus_prev(cx); } else { window.focus_next(cx); }
+            return;
+        }
         let event = crate::input::KeyEvent {
             vk: crate::keys::VK_TAB,
             down: true,
